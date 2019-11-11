@@ -1,0 +1,61 @@
+---
+title: "Midterm"
+author: "Adriana Sham"
+date: "11/5/2019"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r}
+pacman::p_load(msm, dplyr, ggplot2, broom, purrr, tidyverse, stargazer)
+math_sample = as.data.frame(read.csv("Final_sample.csv", header = TRUE, sep = ","))
+math_sample[is.na(math_sample)] = 0
+
+estimates = 
+  math_sample %>% 
+  nest(-background) %>% 
+  mutate(fit = map(data, ~ lm(pv1math ~ female, data = .)), results = map(fit, coefficients)) %>% 
+   unnest(results) %>%
+  filter(row_number() %% 2 == 0)
+  
+ggi = unique(math_sample$ggi)
+final_data = cbind.data.frame(estimates, ggi)
+
+mod = lm(results ~ ggi, final_data)
+b = coef(mod)
+```
+
+## Including Plots
+```{r}
+ggplot(final_data, aes(x = ggi, y = results)) +
+  geom_point(colour = "orange", size = 3) +
+  geom_text(aes(label = background)) +
+  geom_abline(intercept = b[1], slope = b[2], col = "green") +
+  labs(title = "Gender Gap Index vs Math Gender Gap", x = "Gender Gap Index", y = "Math Gender Gap", caption = "Source: 2003, 2006, 2009, and 2012 PISA datasets")
+```
+
+You can also embed plots, for example:
+
+```{r}
+rm(list = ls())
+math_sample = as.data.frame(read.csv("Final_sample.csv", header = TRUE, sep = ",") )
+names(math_sample)
+math_sample[is.na(math_sample)] = 0
+str(math_sample)
+
+lm1 = lm(pv1math ~ female * (age + diffgrade + hostregion + country) + country +  I(ggi*female) + year + background, data = math_sample)
+
+lm2 = lm(pv1math ~  female * (age + diffgrade + hostregion + country) + country +  I(ggi*female) + I(gdppc*female) + year + background, data = math_sample)
+
+lm3 = lm(pv1math ~ female * (age + diffgrade + hostregion + country + gdppc + ggi) + country + year + background, data = math_sample)
+
+lm4 = lm(pv1math ~  female * (age + diffgrade + hostregion + country + misced + fisced) + country +  I(ggi*female) + I(gdppc*female) + year + background, data = math_sample)
+
+lm5 = lm(pv1math ~  female * (age + diffgrade + hostregion + country + misced + fisced + homepos + momwork + dadwork) + country +  I(ggi*female) + I(gdppc*female) + year + background, data = math_sample)
+
+lm6 = lm(pv1math ~  female * (age + diffgrade + hostregion + country + misced + fisced + homepos + momwork + dadwork + pcgirls + private + metropolis) + country +  I(ggi*female) + I(gdppc*female) + year + background, data = math_sample)
+
+output = stargazer(lm1, lm2, lm3, lm4, lm5, lm6, type = "text", title="Gender Equality and the Math Gender Gap", omit = c("country", "background"))
+```
+
